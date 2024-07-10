@@ -2,7 +2,6 @@ import socket
 import threading
 import argparse
 from sys import exit
-from time import sleep
 
 def sendmessage(name, socket, serveraddress, serverport):
     while True:
