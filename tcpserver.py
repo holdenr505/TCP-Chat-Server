@@ -30,7 +30,9 @@ def handleClient(clientsocket, clientname):
         except:
             print("Lost connection with user {}".format(clientname))
             removeClient(clients, clientname)
+            clientsocket.close()
             broadcast('{} left the server'.format(clientname), clients)
+            break
             
 def broadcast(msg, clientdict):
     for client in clientdict.values():
@@ -46,7 +48,7 @@ arguments = parser.parse_args()
 clients = {}
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-serversocket.bind(('127.0.0.1', arguments.port))
+serversocket.bind((socket.gethostbyname(socket.gethostname()), arguments.port))
 serversocket.listen(5)
 
 while True:

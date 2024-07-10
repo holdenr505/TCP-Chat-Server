@@ -1,7 +1,6 @@
 import socket
 import threading
 import argparse
-from sys import exit
 
 def sendmessage(name, socket, serveraddress, serverport):
     while True:
@@ -15,8 +14,13 @@ def sendmessage(name, socket, serveraddress, serverport):
 
 def recvmessage(socket):
     while True:
-        msg = socket.recv(512)
-        print(msg.decode('ascii'))
+        try:
+            msg = socket.recv(512)
+            print(msg.decode('ascii'))
+        except:
+            print('An error occured. Closing socket')
+            socket.close()
+            break
 
 parser = argparse.ArgumentParser()
 parser.add_argument('address', help='Server IP address')
@@ -38,12 +42,7 @@ if authorizationmsg == 'OK':
                                                              arguments.address, arguments.port,)))
     recvthread = threading.Thread(target=recvmessage, args=((clientsocket,)))
 
-    try:
-        sendthread.start()
-        recvthread.start()
-    except KeyboardInterrupt:
-        print('Exiting program and closing socket')
-        clientsocket.close()
-        exit(0) 
+    sendthread.start()
+    recvthread.start()
 else:
     print('User already exists')
