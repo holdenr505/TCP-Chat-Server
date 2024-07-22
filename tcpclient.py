@@ -3,14 +3,7 @@ import threading
 import argparse
 
 def sendmessage(name, socket, serveraddress, serverport):
-    while True:
-        try:
-            socket.send('{}: {}'.format(name, input('')).encode())
-        except TimeoutError:
-            #Attempt to reconnect to the server
-            socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            socket.connect((serveraddress, serverport))
-           
+    socket.send('{}: {}'.format(name, input('')).encode())
 
 def recvmessage(socket):
     while True:
@@ -18,9 +11,9 @@ def recvmessage(socket):
             msg = socket.recv(512)
             print(msg.decode('ascii'))
         except:
-            print('An error occured. Closing socket')
+            print('Socket error. Closing connection...')
             socket.close()
-            break
+            break            
 
 parser = argparse.ArgumentParser()
 parser.add_argument('address', help='Server IP address')
@@ -35,14 +28,17 @@ clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 clientsocket.connect((arguments.address, arguments.port))
 clientsocket.send((str(len(arguments.username)) + arguments.username).encode())
 
-authorizationmsg = clientsocket.recv(2).decode('ascii')
+#Server will send back a two character authentication code
+#"OK" if username available, "NO" if unavailable
+authenticationmsg = clientsocket.recv(2).decode('ascii')
 
-if authorizationmsg == 'OK':
+if authenticationmsg == 'OK':
     sendthread = threading.Thread(target=sendmessage, args=((arguments.username, clientsocket, 
                                                              arguments.address, arguments.port,)))
     recvthread = threading.Thread(target=recvmessage, args=((clientsocket,)))
 
     sendthread.start()
     recvthread.start()
+
 else:
     print('User already exists')
