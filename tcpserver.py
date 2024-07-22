@@ -3,52 +3,43 @@ import threading
 import argparse
 from sys import exit
 
+#check if user with name is already connected and send
+#corresponding authentication code
 def addClient(clientname, clientsocket, clientdict):
-    try:
-        if clientname in clientdict:
-            clientsocket.send('NO'.encode())
-            clientsocket.close()
-        else:
-            clientsocket.send('OK'.encode())
-            clientdict[clientname] = clientsocket
-    except TimeoutError:
+    if clientname in clientdict:
+        clientsocket.send('NO'.encode())
         clientsocket.close()
+    else:
+        clientsocket.send('OK'.encode())
+        clientdict[clientname] = clientsocket
 
     return clientname
 
-def removeClient(clientdict, clientname):
-    if clientdict[clientname]:
-        clientdict.pop(clientname)
-
-    return clientname
-
+#receive messages from users and broadcast to all connected clients
 def handleClient(clientsocket, clientname):
     while True:
         try:
             msg = clientsocket.recv(512).decode('ascii')
             broadcast(msg, clients)
         except:
-            print("Lost connection with user {}".format(clientname))
-            removeClient(clients, clientname)
+            print('Lost connection with user {}'.format(clientname))
             clientsocket.close()
-            broadcast('{} left the server'.format(clientname), clients)
+            clients.pop(clientname)
             break
-            
+ 
 def broadcast(msg, clientdict):
     for client in clientdict.values():
-        try:
-            client.send(msg.encode())
-        except TimeoutError:
-            client.close()
+        client.send(msg.encode())
 
 parser = argparse.ArgumentParser()
 parser.add_argument('port', type=int, help='Port number to bind server to')
 arguments = parser.parse_args()
 
 clients = {}
+threads = []
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-serversocket.bind((socket.gethostbyname(socket.gethostname()), arguments.port))
+serversocket.bind(('127.0.0.1', arguments.port))
 serversocket.listen(5)
 
 while True:
@@ -59,8 +50,11 @@ while True:
         addClient(username, clientconnection, clients)
         broadcast('{} connected to the server'.format(username), clients)
         handlethread = threading.Thread(target=handleClient, args=(clientconnection, username))
+        threads.append(handlethread)
         handlethread.start()
     except KeyboardInterrupt:
-        print('\nExiting program and closing socket')
+        print('\nClosing client connections and server socket')
+        for client in clients:
+            clients[client].close()
         serversocket.close()
-        exit(0)
+        break
