@@ -3,7 +3,8 @@ import threading
 import argparse
 
 def sendmessage(name, socket, serveraddress, serverport):
-    socket.send('{}: {}'.format(name, input('')).encode())
+    while True:
+        socket.send('{}: {}'.format(name, input('')).encode())
 
 def recvmessage(socket):
     while True:
